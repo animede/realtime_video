@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Realtime Video Studio</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/drop-zone.css?v=2">
+</head>
+<body>
+  <main>
+    <header><span class="eyebrow">LTX-2.5 LIVE PIPELINE</span><h1>物語が、待たずに始まる。</h1>
+      <p>キャラクターからシナリオを組み立て、次のシーンを生成しながら連続再生します。</p></header>
+    <section class="grid">
+      <form id="create-form" class="panel">
+        <label>キャラクター画像
+          <span class="drop-zone" data-input="character">
+            <input name="character" type="file" accept="image/*" required>
+            <img class="drop-preview" alt="キャラクタープレビュー" hidden>
+            <span class="drop-copy"><b>画像をドロップ</b><small>またはクリックして選択</small></span>
+          </span>
+        </label>
+        <label>シーン画像（任意・複数）
+          <span id="scene-drop" class="drop-zone compact scene-drop">
+            <input id="scene-images-input" name="scene_images" type="file" accept="image/*" multiple>
+            <span class="scene-icon">▦</span>
+            <span class="drop-copy"><b>シーン画像をまとめてドロップ</b><small>追加画像はリスト末尾に入ります</small></span>
+          </span>
+          <span id="scene-image-list" class="scene-image-list"></span>
+        </label>
+        <label>物語の方向性<textarea name="idea" required placeholder="例：雨上がりの東京を冒険する、希望に満ちた短編"></textarea></label>
+        <div class="row"><label>動画長 <span class="duration-value"><input id="duration-number" type="number" min="5" max="300" step="1" value="30" inputmode="numeric" aria-label="動画長（秒）"><span>秒</span></span>
+          <input id="duration" name="duration" type="range" min="5" max="300" value="30"></label>
+          <label>シーン長<select name="clip_duration"><option value="5" selected>5秒</option><option value="4">4秒</option><option value="3">3秒</option></select></label></div>
+        <label>動画プロファイル<select name="video_profile"><optgroup label="16fps・解像度優先"><option value="16fps-resolution">640×352（16:9）</option><option value="16fps-5x3">640×384（5:3 人物向け）</option><option value="16fps-3x2">576×384（3:2 安定）</option><option value="16fps-4x3-resolution">512×384（4:3）</option><option value="16fps-portrait-3x4">384×512（3:4 縦型）</option><option value="16fps-portrait">384×640（3:5 縦型・実験）</option></optgroup><optgroup label="20fps・バランス"><option value="20fps-hq" selected>576×320（16:9）</option><option value="20fps-4x3-balanced">512×384（4:3）</option></optgroup><optgroup label="24fps・動き優先"><option value="24fps-fast">512×288（16:9）</option><option value="24fps-3x2">480×320（3:2）</option><option value="24fps-portrait">288×512（9:16 縦型）</option></optgroup></select></label>
+        <label>音楽・音声（任意）
+          <span class="drop-zone compact" data-input="audio">
+            <input name="audio" type="file" accept="audio/*">
+            <span class="audio-icon">♫</span>
+            <span class="drop-copy"><b>音楽をドロップ</b><small>またはクリックして選択</small></span>
+          </span>
+        </label>
+        <button type="submit">生成して再生</button><p id="form-error" class="error"></p>
+      </form>
+      <section class="stage panel">
+        <div id="empty"><div class="orb"></div><p>最初のシーンは約4秒で再生を開始します</p></div>
+        <div id="players" hidden><video id="player-a" playsinline></video><video id="player-b" playsinline></video><audio id="master-audio" preload="auto"></audio>
+          <button id="sound" type="button">音声をオフ</button><div class="hud"><span id="now-playing"></span><span id="buffer-state"></span></div></div>
+      </section>
+    </section>
+    <section id="story" class="panel" hidden><div class="story-head"><div><span class="eyebrow">SCENARIO</span><h2 id="synopsis"></h2></div><span id="run-status" class="badge"></span></div><div id="review-actions" class="review-actions" hidden><button id="download-scenario" type="button" class="secondary">シナリオJSONを保存</button><button id="regenerate" type="button" class="secondary">シナリオを再生成</button><button id="approve" type="button">このシナリオで動画生成</button></div><ol id="scene-list"></ol></section>
+  </main>
+  <script src="/static/app.js?v=5"></script>
+  <script src="/static/playback-tuning.js?v=3"></script>
+  <script src="/static/master-audio.js?v=1"></script>
+</body>
+</html>

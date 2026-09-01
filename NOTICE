@@ -1,0 +1,25 @@
+Realtime Video Studio
+Copyright 2026 animede
+
+This application's source code is licensed under the Apache License, Version 2.0.
+
+UPSTREAM AND CONNECTED COMPONENTS
+
+- Minimax-H3-lipsync-mv
+  Source-code license: Apache License 2.0
+  Used for vocal separation and vocal-activity analysis integration.
+
+- diffusers-movie-server gateway
+  Developed by the same author and accessed by this application through its HTTP
+  API. It is a separate project; its repository-level license will be designated
+  in that project. Its source code is not distributed as part of this application.
+
+MODEL AND THIRD-PARTY EXCLUSIONS
+
+The Apache License 2.0 for this application does not grant rights to model weights
+or third-party assets. LTX-2/LTX-2.5 and MiniMax-H3 weights, Gemma models, LoRAs,
+checkpoints, libraries, media inputs, and generated outputs remain subject to
+their respective licenses and terms.
+
+Redistributors must retain this NOTICE, the Apache License 2.0 text, upstream
+copyright and attribution notices, and notices for modified files where required.
