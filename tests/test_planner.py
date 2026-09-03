@@ -25,3 +25,13 @@ def test_short_remainder_is_distributed(tmp_path: Path):
     assert sum(scene.duration for scene in plan.scenes) == pytest.approx(6.5)
     assert max(scene.duration for scene in plan.scenes) - min(scene.duration for scene in plan.scenes) < .002
     assert min(scene.duration for scene in plan.scenes) >= 1
+
+
+def test_anime_style_is_applied_to_fallback_prompts(tmp_path: Path):
+    image = tmp_path / "character.png"
+    image.write_bytes(b"x")
+    plan = asyncio.run(create_plan(
+        image, 5, 5, "stage performance", Settings(data_dir=tmp_path, llm_url=None),
+        visual_style="anime",
+    ))
+    assert "Japanese anime visual style" in plan.scenes[0].prompt

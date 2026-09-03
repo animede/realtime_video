@@ -9,6 +9,7 @@ import httpx
 from .config import Settings
 from .gateway import GatewayClient
 from .models import Run, RunStatus
+from .styles import apply_visual_style
 from .vocals import analyze_vocal_ratios, apply_mouth_direction, has_active_vocals
 
 
@@ -98,6 +99,7 @@ class Orchestrator:
                 if vocal_active and audio_total is not None:
                     audio_offset = min(elapsed, max(0.0, audio_total - scene.duration - 0.15))
                 generation_prompt = apply_mouth_direction(scene.prompt, vocal_ratios[scene.index]) if audio_id else scene.prompt
+                generation_prompt = apply_visual_style(generation_prompt, run.visual_style)
                 result = await self.gateway.generate(generation_prompt, scene.duration, 1000 + scene.index,
                                                      assets, audio_offset,
                                                      has_last_frame=target_id is not None,

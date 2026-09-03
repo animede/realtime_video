@@ -44,6 +44,7 @@ class Run(BaseModel):
     generation_revision: int = 0
     audio_url: str | None = None
     story_direction: str = ""
+    visual_style: str = "realistic"
     created_at: float = Field(default_factory=time)
     plan: StoryPlan | None = None
     error: str | None = None

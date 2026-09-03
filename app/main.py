@@ -81,6 +81,7 @@ def restore_persisted_run(run_id: str) -> bool:
 @app.post("/api/runs", response_model=Run, status_code=202)
 async def create_run(duration: float = Form(...), clip_duration: float = Form(5.0), idea: str = Form(""),
                      video_profile: str = Form("20fps-hq"),
+                     visual_style: str = Form("realistic"),
                      character: UploadFile = File(...), audio: UploadFile | None = File(None),
                      scene_images: list[UploadFile] = File(default=[])):
     if not 5 <= duration <= 300:
@@ -91,11 +92,13 @@ async def create_run(duration: float = Form(...), clip_duration: float = Form(5.
         raise HTTPException(400, "物語の方向性を入力してください")
     if video_profile not in VIDEO_PROFILES:
         raise HTTPException(400, "unknown video profile")
+    if visual_style not in {"realistic", "anime"}:
+        raise HTTPException(400, "unknown visual style")
     supplied_scene_images = [item for item in scene_images if item.filename]
     if len(supplied_scene_images) > math.ceil(duration / clip_duration) + 1:
         raise HTTPException(400, "シーン画像が動画区間数に対して多すぎます")
     run = Run(requested_duration=duration, clip_duration=clip_duration, video_profile=video_profile,
-              story_direction=idea)
+              story_direction=idea, visual_style=visual_style)
     folder = settings.data_dir / run.id
     suffix = Path(character.filename or "character.png").suffix or ".png"
     character_path = folder / f"character{suffix}"
@@ -113,7 +116,8 @@ async def create_run(duration: float = Form(...), clip_duration: float = Form(5.
         await save_upload(audio, audio_path)
         run.audio_url = f"/api/runs/{run.id}/audio"
     try:
-        run.plan = await create_plan(character_path, duration, clip_duration, idea, settings, scene_paths)
+        run.plan = await create_plan(character_path, duration, clip_duration, idea, settings, scene_paths,
+                                     visual_style=visual_style)
     except Exception as exc:
         raise HTTPException(502, f"scenario planning failed: {exc}") from exc
     run.status = "awaiting_confirmation"
@@ -124,17 +128,21 @@ async def create_run(duration: float = Form(...), clip_duration: float = Form(5.
 
 
 @app.post("/api/runs/{run_id}/regenerate", response_model=Run)
-async def regenerate_scenario(run_id: str):
+async def regenerate_scenario(run_id: str, visual_style: str | None = Form(None)):
     if not restore_persisted_run(run_id) or run_id not in run_inputs:
         raise HTTPException(404, "run not found")
     run = orchestrator.runs[run_id]
     if run.status == "generating":
         raise HTTPException(409, "scenario cannot be regenerated during video generation")
+    if visual_style is not None:
+        if visual_style not in {"realistic", "anime"}:
+            raise HTTPException(400, "unknown visual style")
+        run.visual_style = visual_style
     character_path, _, scene_paths, idea = run_inputs[run_id]
     run.status = "planning"
     try:
         run.plan = await create_plan(character_path, run.requested_duration, run.clip_duration,
-                                     idea, settings, scene_paths)
+                                     idea, settings, scene_paths, visual_style=run.visual_style)
         run.status = "awaiting_confirmation"
         run.error = None
         save_scenario(run)

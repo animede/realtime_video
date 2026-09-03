@@ -11,6 +11,7 @@ import httpx
 
 from .config import Settings
 from .models import Scene, StoryPlan
+from .styles import ANIME_STYLE_LOCK, REALISTIC_STYLE_LOCK
 
 
 SYSTEM = """You are a meticulous character analyst, screenwriter, storyboard artist,
@@ -58,7 +59,14 @@ def _durations(total: float, count: int) -> list[float]:
     return values
 
 
-def _fallback(scene_count: int, duration: float, clip_duration: float, idea: str) -> StoryPlan:
+def _style_instruction(visual_style: str) -> str:
+    if visual_style == "anime":
+        return ANIME_STYLE_LOCK
+    return REALISTIC_STYLE_LOCK
+
+
+def _fallback(scene_count: int, duration: float, clip_duration: float, idea: str,
+              visual_style: str = "realistic") -> StoryPlan:
     beats = [
         ("Arrival", "The character enters the setting and looks around with curious, natural movement; wide establishing shot"),
         ("Discovery", "The character notices something intriguing and approaches it; smooth medium tracking shot"),
@@ -77,7 +85,8 @@ def _fallback(scene_count: int, duration: float, clip_duration: float, idea: str
             title=title,
             duration=round(length, 3),
             prompt=(f"Same character as the reference image, identity and outfit unchanged. {action}. "
-                    f"Story context: {context}. Cinematic composition, coherent environment, smooth motion, no text."),
+                    f"Story context: {context}. {_style_instruction(visual_style)}. Cinematic composition, "
+                    "coherent environment, smooth motion, no text."),
         ))
     return StoryPlan(
         character_description="The character, appearance, outfit, and visual style shown in the reference image",
@@ -117,7 +126,7 @@ async def _chat_json(client: httpx.AsyncClient, cfg: Settings, model: str, syste
 
 
 async def _create_plan_staged(image_path: Path, duration: float, clip_duration: float, idea: str,
-                              cfg: Settings, scene_paths: list[Path]) -> StoryPlan:
+                              cfg: Settings, scene_paths: list[Path], visual_style: str) -> StoryPlan:
     count = math.ceil(duration / clip_duration)
     images = [image_path, *scene_paths]
     image_content = []
@@ -131,7 +140,7 @@ async def _create_plan_staged(image_path: Path, duration: float, clip_duration: 
     async with httpx.AsyncClient(timeout=120) as client:
         model = await _model_name(client, cfg)
         analysis = await _chat_json(client, cfg, model,
-            "Analyze visual references for a film. Return strict JSON: character_description (detailed English invariant identity) and checkpoint_descriptions (ordered English array). No story writing.",
+            "Analyze visual references for a film. Return strict JSON: character_description (detailed English invariant identity, separated from rendering style) and checkpoint_descriptions (ordered English array). No story writing.",
             image_content)
         character = str(analysis.get("character_description", "")).strip()
         if not character:
@@ -146,7 +155,7 @@ async def _create_plan_staged(image_path: Path, duration: float, clip_duration: 
         for start in range(0, count, 6):
             batch = raw_scenes[start:start + 6]
             result = await _chat_json(client, cfg, model,
-                "Convert scene directions into standalone English video-generation prompts. Return strict JSON with prompts array in the same order. Each prompt must preserve the supplied invariant character, specify action, expression, setting, camera, lighting and smooth motion; no dialogue or text.",
+                f"Convert scene directions into standalone English video-generation prompts in this mandatory target style: {_style_instruction(visual_style)}. Return strict JSON with prompts array in the same order. Each prompt must preserve the supplied invariant character, specify action, expression, setting, camera, lighting and smooth motion; no dialogue or text. Repeat the target style in every prompt.",
                 json.dumps({"character": character, "synopsis": outline.get("synopsis"),
                             "scene_offset": start, "scenes": batch}, ensure_ascii=False))
             batch_prompts = result.get("prompts", [])
@@ -163,12 +172,13 @@ async def _create_plan_staged(image_path: Path, duration: float, clip_duration: 
 
 
 async def create_plan(image_path: Path, duration: float, clip_duration: float, idea: str, cfg: Settings,
-                      scene_image_paths: list[Path] | None = None) -> StoryPlan:
+                      scene_image_paths: list[Path] | None = None,
+                      visual_style: str = "realistic") -> StoryPlan:
     count = math.ceil(duration / clip_duration)
     if not cfg.llm_url:
-        return _fallback(count, duration, clip_duration, idea)
+        return _fallback(count, duration, clip_duration, idea, visual_style)
     return await _create_plan_staged(image_path, duration, clip_duration, idea, cfg,
-                                     scene_image_paths or [])
+                                     scene_image_paths or [], visual_style)
 
     mime = mimetypes.guess_type(image_path.name)[0] or "image/png"
     encoded = base64.b64encode(image_path.read_bytes()).decode()

@@ -29,6 +29,7 @@
           <span id="scene-image-list" class="scene-image-list"></span>
         </label>
         <label>物語の方向性<textarea name="idea" required placeholder="例：雨上がりの東京を冒険する、希望に満ちた短編"></textarea></label>
+        <label>画風<select name="visual_style"><option value="realistic" selected>リアル</option><option value="anime">アニメ</option></select></label>
         <div class="row"><label>動画長 <span class="duration-value"><input id="duration-number" type="number" min="5" max="300" step="1" value="30" inputmode="numeric" aria-label="動画長（秒）"><span>秒</span></span>
           <input id="duration" name="duration" type="range" min="5" max="300" value="30"></label>
           <label>シーン長<select name="clip_duration"><option value="5" selected>5秒</option><option value="4">4秒</option><option value="3">3秒</option></select></label></div>
@@ -50,7 +51,7 @@
     </section>
     <section id="story" class="panel" hidden><div class="story-head"><div><span class="eyebrow">SCENARIO</span><h2 id="synopsis"></h2></div><span id="run-status" class="badge"></span></div><div id="review-actions" class="review-actions" hidden><button id="download-scenario" type="button" class="secondary">シナリオJSONを保存</button><button id="regenerate" type="button" class="secondary">シナリオを再生成</button><button id="approve" type="button">このシナリオで動画生成</button></div><ol id="scene-list"></ol></section>
   </main>
-  <script src="/static/app.js?v=5"></script>
+  <script src="/static/app.js?v=8"></script>
   <script src="/static/playback-tuning.js?v=3"></script>
   <script src="/static/master-audio.js?v=1"></script>
 </body>
